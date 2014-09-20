@@ -11,7 +11,7 @@ int papi_counters[NUM_PAPI_COUNTERS] =
 long long int papi_values_[NUM_PAPI_COUNTERS];
 
 int N = 1;
-int **A, **B, **C;
+float **A, **B, **C;
 
 void handle_error (int retval) {
   printf("PAPI error %d: %s\n", retval, PAPI_strerror(retval));
@@ -60,16 +60,16 @@ void clearCache() {
 
 
 void init() {
-  A = new int*[N];
-  B = new int*[N];
-  C = new int*[N];
+  A = new float*[N];
+  B = new float*[N];
+  C = new float*[N];
   for (int i = 0; i < N; i++) {
-    A[i] = new int[N];
-    B[i] = new int[N];
-    C[i] = new int[N];
+    A[i] = new float[N];
+    B[i] = new float[N];
+    C[i] = new float[N];
     for (int j = 0; j < N; j++) {
-      A[i][j] = rand() % (N * N) + 1;
-      B[i][j] = rand() % (N * N) + 1;
+      A[i][j] = rand();
+      B[i][j] = rand();
       C[i][j] = 0;
     }
   }
