@@ -80,13 +80,20 @@ int multiply() {
 
 
 int main(int argc, char** argv) {
-  init_papi();
   N = atoi(argv[1]);
+  printf("%d\n", N);
   init();
+  printf("Check 2\n",);
   clearCache();
+  printf("Check 3\n",);
+  init_papi();
+  printf("Check 4\n",);
   begin_papi();
+  printf("Check 5\n",);
   multiply();
+  printf("Check 6\n",);
   end_papi();
+  printf("Check 8\n",);
   printf("%d %lld %lld %lld %lld\n", N,
     papi_values_[0],
     papi_values_[1],
