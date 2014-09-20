@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <stdlib.h>
+#include <memory.h>
 #include <papi.h>
 
 #define NUM_PAPI_COUNTERS 4
