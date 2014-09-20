@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <malloc.h>
+#include <cstdlib>
 #include <stdlib.h>
 #include <string.h>
 #include <papi.h>
@@ -45,13 +45,13 @@ void end_papi() {
 }
 
 void clearCache() {
-  char* a = (char*) _mm_malloc(sizeof(char) * 1024 * 1024 * 16,16);
-  char* b = (char*) _mm_malloc(sizeof(char) * 1024 * 1024 * 16,16);
+  char* a = (char*) std::malloc(sizeof(char) * 1024 * 1024 * 16,16);
+  char* b = (char*) std::malloc(sizeof(char) * 1024 * 1024 * 16,16);
 
   memcpy(a,b,sizeof(char) * 1024 * 1024 * 16);
   memcpy(b,a,sizeof(char) * 1024 * 1024 * 16);
-  _mm_free(a);
-  _mm_free(b);
+  std::free(a);
+  std::free(b);
 }
 
 
