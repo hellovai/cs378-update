@@ -63,10 +63,11 @@ void init() {
     A[i] = new int[N];
     B[i] = new int[N];
     C[i] = new int[N];
-    for (int j = 0; j < N; j++)
+    for (int j = 0; j < N; j++) {
       A[i][j] = rand() % (N * N) + 1;
       B[i][j] = rand() % (N * N) + 1;
       C[i][j] = 0;
+    }
   }
 }
 
