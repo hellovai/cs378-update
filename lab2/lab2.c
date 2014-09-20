@@ -33,7 +33,7 @@ void begin_papi() {
     handle_error(rv);
 }
 
-void end_papi(int EventSet) {
+void end_papi() {
   long_long retval;
   int rv;
 
@@ -69,9 +69,9 @@ void init() {
 }
 
 int multiply() {
-  for ( i = 0 ; i < N ; i++ )
-    for ( j = 0 ; j < N ; j++ )
-      for ( k = 0 ; k < N ; k++ )
+  for (int i = 0 ; i < N ; i++ )
+    for (int j = 0 ; j < N ; j++ )
+      for (int k = 0 ; k < N ; k++ )
         C[i][j] += A[i][k]*B[k][j];
 }
 
@@ -84,10 +84,10 @@ int main(int argc, char** argv) {
   begin_papi();
   multiply();
   end_papi();
-  std::cout << N << " ";
-  for (int i = 0; i < NUM_PAPI_COUNTERS; i++) {
-    std::cout << papi_values_[i] << " ";
-  }
-  std::cout << std:endl;
+  printf("%d %d %d %d %d\n", N,
+    papi_values_[0],
+    papi_values_[1],
+    papi_values_[2],
+    papi_values_[3]);
 return 0;
 }
