@@ -83,17 +83,17 @@ int main(int argc, char** argv) {
   N = atoi(argv[1]);
   printf("%d\n", N);
   init();
-  printf("Check 2\n",);
+  printf("Check 2\n");
   clearCache();
-  printf("Check 3\n",);
+  printf("Check 3\n");
   init_papi();
-  printf("Check 4\n",);
+  printf("Check 4\n");
   begin_papi();
-  printf("Check 5\n",);
+  printf("Check 5\n");
   multiply();
-  printf("Check 6\n",);
+  printf("Check 6\n");
   end_papi();
-  printf("Check 8\n",);
+  printf("Check 8\n");
   printf("%d %lld %lld %lld %lld\n", N,
     papi_values_[0],
     papi_values_[1],
