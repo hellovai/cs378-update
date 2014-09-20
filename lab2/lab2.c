@@ -7,7 +7,7 @@
 #define NUM_PAPI_COUNTERS 4
 
 int papi_counters[NUM_PAPI_COUNTERS] =
-  { PAPI_FP_INS, PAPI_L1_DCM, PAPI_L2_TCM };
+  { PAPI_TOT_INS, PAPI_FP_INS, PAPI_L1_DCM, PAPI_L2_TCM };
 long long int papi_values_[NUM_PAPI_COUNTERS];
 
 int N = 1;
@@ -94,10 +94,9 @@ int main(int argc, char** argv) {
   printf("Check 6\n");
   end_papi();
   printf("Check 8\n");
-  printf("%d %lld %lld %lld %lld\n", N,
-    papi_values_[0],
-    papi_values_[1],
-    papi_values_[2],
-    papi_values_[3]);
+  printf("%d ", N);
+  for (int i = 0; i < NUM_PAPI_COUNTERS; i++)
+   printf("%lld ", papi_values_[i])
+ printf("\n");
 return 0;
 }
