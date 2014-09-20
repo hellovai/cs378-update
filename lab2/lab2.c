@@ -47,8 +47,8 @@ void clearCache() {
   char* a = (char*) _mm_malloc(sizeof(char) * 1024 * 1024 * 16,16);
   char* b = (char*) _mm_malloc(sizeof(char) * 1024 * 1024 * 16,16);
 
-  memcpy(a,b,sizeof(char) * 1024 * 1024 * 16);
-  memcpy(b,a,sizeof(char) * 1024 * 1024 * 16);
+  std::memcpy(a,b,sizeof(char) * 1024 * 1024 * 16);
+  std::memcpy(b,a,sizeof(char) * 1024 * 1024 * 16);
   _mm_free(a);
   _mm_free(b);
 }
