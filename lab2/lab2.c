@@ -45,8 +45,8 @@ void end_papi() {
 }
 
 void clearCache() {
-  char* a = (char*) std::malloc(sizeof(char) * 1024 * 1024 * 16,16);
-  char* b = (char*) std::malloc(sizeof(char) * 1024 * 1024 * 16,16);
+  char* a = (char*) std::malloc(sizeof(char) * 1024 * 1024 * 16);
+  char* b = (char*) std::malloc(sizeof(char) * 1024 * 1024 * 16);
 
   memcpy(a,b,sizeof(char) * 1024 * 1024 * 16);
   memcpy(b,a,sizeof(char) * 1024 * 1024 * 16);
