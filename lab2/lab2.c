@@ -56,9 +56,9 @@ void clearCache() {
 
 
 void init() {
-  A = new *int[N];
-  B = new *int[N];
-  C = new *int[N];
+  A = new int*[N];
+  B = new int*[N];
+  C = new int*[N];
   for (int i = 0; i < N; i++) {
     A[i] = new int[N];
     B[i] = new int[N];
@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
   begin_papi();
   multiply();
   end_papi();
-  printf("%d %d %d %d %d\n", N,
+  printf("%d %lld %lld %lld %lld\n", N,
     papi_values_[0],
     papi_values_[1],
     papi_values_[2],
