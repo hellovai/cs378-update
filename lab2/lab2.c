@@ -14,7 +14,7 @@ int N = 1;
 int **A, **B, **C;
 
 void handle_error (int retval) {
-  printf("PAPI error %d: %s\n", retval, PAPI_strerror(retval));
+  printf("PAPI %d error %d: %s\n", PAPI_VER_CURRENT, retval, PAPI_strerror(retval));
   exit(1);
 }
 
