@@ -4,17 +4,17 @@
 #include <string.h>
 #include <papi.h>
 
-#define NUM_PAPI_COUNTERS 4
+#define NUM_PAPI_COUNTERS 1
 
 int papi_counters[NUM_PAPI_COUNTERS] =
-  { PAPI_TOT_INS, PAPI_FP_INS, PAPI_L1_DCM, PAPI_L2_TCM };
+  { PAPI_TOT_INS };
 long long int papi_values_[NUM_PAPI_COUNTERS];
 
 int N = 1;
 int **A, **B, **C;
 
 void handle_error (int retval) {
-  printf("PAPI %d error %d: %s\n", PAPI_VER_CURRENT, retval, PAPI_strerror(retval));
+  printf("PAPI error %d: %s\n", retval, PAPI_strerror(retval));
   exit(1);
 }
 
