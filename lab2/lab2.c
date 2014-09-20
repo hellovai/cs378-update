@@ -75,7 +75,7 @@ void init() {
   }
 }
 
-int multiply() {
+void multiply() {
   for (int i = 0 ; i < N ; i++ )
     for (int j = 0 ; j < N ; j++ )
       for (int k = 0 ; k < N ; k++ )
@@ -89,11 +89,8 @@ int main(int argc, char** argv) {
   clearCache();
   init_papi();
   begin_papi();
-  printf("Check 5\n");
   multiply();
-  printf("Check 6\n");
   end_papi();
-  printf("Check 8\n");
   printf("%d ", N);
   for (int i = 0; i < NUM_PAPI_COUNTERS; i++)
    printf("%lld ", papi_values_[i]);
