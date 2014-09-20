@@ -25,6 +25,10 @@ void init_papi() {
     exit(1);
   }
   if (retval < 0) handle_error(retval);
+  for (int i = 0; i < NUM_PAPI_COUNTERS; i++)
+  if (PAPI_query_event (papi_counters[i]) != PAPI_OK) {
+    printf ("No %d counter\n", i);
+  }
 }
 
 void begin_papi() {
@@ -81,13 +85,9 @@ int multiply() {
 
 int main(int argc, char** argv) {
   N = atoi(argv[1]);
-  printf("%d\n", N);
   init();
-  printf("Check 2\n");
   clearCache();
-  printf("Check 3\n");
   init_papi();
-  printf("Check 4\n");
   begin_papi();
   printf("Check 5\n");
   multiply();
