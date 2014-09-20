@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
   printf("Check 8\n");
   printf("%d ", N);
   for (int i = 0; i < NUM_PAPI_COUNTERS; i++)
-   printf("%lld ", papi_values_[i])
+   printf("%lld ", papi_values_[i]);
  printf("\n");
 return 0;
 }
