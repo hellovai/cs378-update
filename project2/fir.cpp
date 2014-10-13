@@ -1,5 +1,7 @@
 #include "fir.h"
 
+#define FILTERSIZE 199
+
 std::map< int, std::map<float, std::map<char, float*> > > fir_filter;
 
 void handle(char* name) {
@@ -56,10 +58,43 @@ void write_audio(char* file_name, int16_t* buffer) {
 }
 
 void FIR(float* x, float* h, float* y, int size) {
-  for (int i = FIR_SIZE + 1; i < size; i++) {
-    for (int j = 0; j <= FIR_SIZE; j++) {
-      y[i] += h[FIR_SIZE - j] * x[i + j - FIR_SIZE];
+  float zeroArr[1] = {0.0};
+  for (int i = FIR_SIZE + 1; i < size; i+=4) {
+    __m128 yi = _mm_load1_ps(&zeroArr[0]);
+    for (int j = 0; j <= FIR_SIZE; j+=4) {
+      //y[i] += h[FIR_SIZE - j] * x[i + j - FIR_SIZE];
+      __m128 h199, h198, h197, h196;
+      __m128 xPart1;  //x[0], x[1], x[2], x[3]
+      __m128 xPart2; //x[4], x[5], x[6], x[7] ; this is __m128 x4567;
+      h199 = _mm_load1_ps(&h[FILTERSIZE]);
+      h198 = _mm_load1_ps(&h[FILTERSIZE-j-1]);
+      h197 = _mm_load1_ps(&h[FILTERSIZE-j-2]);
+      h196 = _mm_load1_ps(&h[FILTERSIZE-j-3]);
+      xPart1 = _mm_load_ps(&x[i + j - FILTERSIZE - 1]);
+      xPart2 = _mm_load_ps(&x[i + j - FILTERSIZE + 3]);
+
+      //shuffle
+      __m128 x3344 = _mm_shuffle_ps(xPart1, xPart2, _MM_SHUFFLE(0,0,4,4)); //x{3, 3, 4, 4}
+      __m128 x1234 = _mm_shuffle_ps(xPart1, x3344, _MM_SHUFFLE(2,0,2,1)); //x{1, 2, 3, 4}
+
+      __m128 x2345 = _mm_shuffle_ps(xPart1, xPart2, _MM_SHUFFLE(1,0,3,2)); //x{2, 3, 4, 5}
+      
+      __m128 x3456 = _mm_shuffle_ps(x3344, xPart2, _MM_SHUFFLE(2,1,2,0)); //x{3, 4, 5, 6}
+
+      __m128 iMult0 = _mm_mul_ps(h199, x1234);
+      __m128 iMult1 = _mm_mul_ps(h198, x2345);
+      __m128 iMult2 = _mm_mul_ps(h197, x3456);
+      __m128 iMult3 = _mm_mul_ps(h196, xPart2);
+
+      __m128 addedAll = _mm_add_ps(iMult3, _mm_add_ps(iMult2, _mm_add_ps(iMult1, iMult0))); //sum each multiplied vector
+      yi = _mm_add_ps(yi, addedAll);
+      /*if (i == size-1) {
+        printf("FIR_SIZE - j is %d, i+j-FIR_SIZE is %d\n", FIR_SIZE - j, i+j-FIR_SIZE); 
+      }*/
+      //printf("j = %d\n", j);
     }
+
+    _mm_store_ps(&y[i], yi);
   }
 }
 
@@ -103,9 +138,10 @@ void apply_filter(char *in_r, char *in_l, char *out_r, char *out_l, int angle, f
   FIR(l_stream, rnFilter, ro_stream, size);
   FIR(r_stream, rpFilter, ro_stream, size);
   floatToInt(ro_stream, ro_stream_clip, size);
+  
 
-  write_audio(out_l, lo_stream_clip);
-  write_audio(out_r, ro_stream_clip);
+  //write_audio(out_l, lo_stream_clip);
+  //write_audio(out_r, ro_stream_clip);
 
   free(lo_stream_clip);
   free(ro_stream_clip);
