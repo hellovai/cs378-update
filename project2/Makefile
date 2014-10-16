@@ -1,11 +1,16 @@
-FLAGS=-ffast-math -O3 -fno-tree-vectorize
+FLAGS=-ffast-math -O3 -fno-tree-vectorize -lm
+GPP=g++
 
 all:
-	g++ part1.cpp fir.cpp -o part1 $(FLAGS)
-	g++ part2.cpp fir.cpp -o part2 $(FLAGS)
+	$(GPP) part1.cpp fir.cpp -o part1 $(FLAGS)
+	$(GPP) part2.cpp fir.cpp -o part2 $(FLAGS)
 
 test1:
-	./part1 sub040.data samples/01.R.pcm samples/01.L.pcm R.pcm L.pcm
+	./part1 sub040.data input/R.pcm input/L.pcm output/O_part1.pcm
 
 test2:
-	./part2 sub040.data -80 0 samples/01.R.pcm R_m.pcm L_m.pcm
+	./part2 sub040.data 0 input/R.pcm output/O_part2.pcm
+
+clean:
+	rm *.pcm
+	rm part1 part2
