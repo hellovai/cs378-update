@@ -1,6 +1,5 @@
 #include <climits>
 #include <iostream>
-#include <fstream>
 #include <stdlib.h>
 #include <sys/time.h>
 #include <time.h>
@@ -8,7 +7,6 @@
 #include <queue>
 #include <stack>
 #include <vector>
-#include <map>
 #include <string>
 
 #include <thread>
@@ -17,12 +15,14 @@
 #include "csr.h"
 #include "parallelsssp.h"
 
+typedef struct { int id; } Node;
+
 typedef struct {
   int size;
-  std::vector<int> csr;
-  std::vector<int> edges;
-  std::vector<int> indirect;
-  std::vector<int> data;
+  int* csr;
+  int* edges;
+  int* indirect;
+  Node* data;
 } Graph;
 
 typedef struct {
@@ -83,54 +83,20 @@ void print(int* csr, int* indirect, int MAX_NODES) {
   }
 }
 
-// Graph init(int size) {
-//   try {
-//     Node* data = new Node[size];
-//     int* csr = new int[size * size];
-//     int* edges = new int[size * size];
-//     int* indirect = new int[size];
+Graph init(int size) {
+  try {
+    Node* data = new Node[size];
+    int* csr = new int[size * size];
+    int* edges = new int[size * size];
+    int* indirect = new int[size];
 
-//     createCSR(csr, edges, indirect, 2, size);
-//     return {size, csr, edges, indirect, data};
-//   } catch (std::bad_alloc& e) {
-//     std::cout << "Memory Allocation error" << std::endl;
-//     exit(-1);
-//   }
-// }
-
-Graph init(std::string filename, int size) {
-    std::vector<int> csr(size), edges(size), data;
-    std::map<int, int> d, d_ctr;
-    std::ifstream ifs;
-    ifs.open(filename, std::ifstream::in);
-    int index = 0;
-    while (ifs.good()) {
-      int x, y, dist;
-      ifs >> x >> y >> dist;
-      if ( d.count(x) == 0 ) {
-        d[x] = index++;
-        d_ctr[x] = 0;
-        data.push_back(x);
-      }
-      if ( d.count(y) == 0 ) {
-        d[y] = index++;
-        d_ctr[y] = 0;
-        data.push_back(y);
-      }
-      d_ctr[x]++;
-
-      csr.push_back(d[y]);
-      edges.push_back(dist);
-    }
-    int sum = 0;
-    std::vector<int> indirect(data.size());
-    for (int i = 0; i < data.size(); i++) {
-      sum += d_ctr[data[i]];
-      indirect[i] = sum;
-    }
-    return {(int) data.size(), csr, edges, indirect, data};
+    createCSR(csr, edges, indirect, 2, size);
+    return {size, csr, edges, indirect, data};
+  } catch (std::bad_alloc& e) {
+    std::cout << "Memory Allocation error" << std::endl;
+    exit(-1);
+  }
 }
-
 
 double deltaTime(struct timeval t1, struct timeval t2) {
   struct timeval ret;
@@ -166,30 +132,30 @@ void runDijkstra(Graph* g, int num_threads, std::string name, int source = 0) {
   gettimeofday(&t2, 0);
   printf("Time:\t%f\n", deltaTime(t1, t2));
 
-  // for (int i = 0; i < g->size; ++i) {
-  //   std::cout << dist[i] << " ";
-  // }
-  // std::cout << std::endl;
-
   delete dist;
 }
 
 int main(int argc, char const* argv[]) {
   if (argc < 3) {
-    std::cout << "Usage: " << argv[0] << " <num_threads> <file> <count>" << std::endl;
+    std::cout << "Usage: " << argv[0] << " <size> <num_threads>" << std::endl;
     exit(-1);
   }
-  int num_threads = atoi(argv[1]);
-  std::string filename = argv[2];
-  int count = atoi(argv[3]);
+  int size = atoi(argv[1]);
+  int num_threads = atoi(argv[2]);
 
-  Graph g = init(filename, count);
+  Graph g = init(size);
 
   runDijkstra<MyQueue<QueueType> >(&g, num_threads, "Queue");
   runDijkstra<std::stack<QueueType> >(&g, num_threads, "Stack");
   runDijkstra<
       std::priority_queue<QueueType, std::vector<QueueType>, Comparator> >(
       &g, num_threads, "Priority Queue");
+
+  // free memory
+  delete g.data;
+  delete g.csr;
+  delete g.edges;
+  delete g.indirect;
 
   return 0;
 }
