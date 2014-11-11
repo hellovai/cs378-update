@@ -9,6 +9,7 @@
 #include <stack>
 #include <vector>
 #include <map>
+#include <deque>
 #include <string>
 
 #include <thread>
@@ -80,23 +81,21 @@ std::mutex lock;
 
 template <typename T>
 class SharedQueue {
-  static int N;
   std::vector<std::priority_queue<T, std::vector<T>, Comparator>> _list;
-  std::vector<std::mutex> _block;
+  std::deque<std::mutex *> _block;
   int counter;
  public:
+  static int N;
   SharedQueue() : counter(0) {
     for (int i = 0; i < N; ++i) {
       _list.push_back(std::priority_queue<T, std::vector<T>, Comparator>());
-      // _block.push_back(std::mutex);
+      _block.push_back(new std::mutex());
     }
   }
 
-  static void setN(int n) { N = n; }
-
   T popper(int id) {
     T temp;
-    _block[id].lock();
+    _block[id]->lock();
     if (_list[id].size() > 0) {
       temp = _list[id].top();
       _list[id].pop();
@@ -107,10 +106,10 @@ class SharedQueue {
       int i = (id == 0) ? 1 : 0;
       bool searching = true;
       while (searching) {
-        while (!_block[i].try_lock()) {
+        while (!_block[i]->try_lock()) {
           i = (++i) % N;
           if (counter == 0) {
-            _block[id].unlock();
+            _block[id]->unlock();
             return {-1, 0};
           }
         }
@@ -122,20 +121,20 @@ class SharedQueue {
           lock.unlock();
           searching = false;
         }
-        _block[i].unlock();
+        _block[i]->unlock();
       }
     }
-    _block[id].unlock();
+    _block[id]->unlock();
     return temp;
   }
 
   void pusher(T obj, int id) {
-    _block[id].lock();
+    _block[id]->lock();
     _list[id].push(obj);
     lock.lock();
     counter++;
     lock.unlock();
-    _block[id].unlock();
+    _block[id]->unlock();
   }
   bool empty() { return counter == 0; }
 };
@@ -242,13 +241,9 @@ void runDijkstra(Graph* g, int num_threads, std::string name, int source = 0) {
   gettimeofday(&t2, 0);
   printf("Time:\t%f\n", deltaTime(t1, t2));
 
-  // for (int i = 0; i < g->size; ++i) {
-  //   std::cout << dist[i] << " ";
-  // }
-  // std::cout << std::endl;
-
   delete dist;
 }
+template <typename T> int SharedQueue<T>::N = 0;
 
 int main(int argc, char const* argv[]) {
   if (argc < 3) {
@@ -260,7 +255,7 @@ int main(int argc, char const* argv[]) {
   std::string filename = argv[2];
   int count = atoi(argv[3]);
 
-  SharedQueue<QueueType>::setN(num_threads);
+  SharedQueue<QueueType>::N = num_threads;
   Graph g = init(filename, count);
 
   runDijkstra<MyQueue<QueueType> >(&g, num_threads, "Queue");
