@@ -163,18 +163,18 @@ void dijkstra(Graph* g, int* dist, T q, int id) {
   }
 }
 
-void print(int* csr, int* indirect, int MAX_NODES) {
-  for (int i = 0; i < MAX_NODES; ++i) {
-    int s = i == 0 ? 0 : indirect[i - 1];
-    int e = indirect[i];
+void print(Graph* g) {
+  for (int i = 0; i < g->size; ++i) {
+    int s = (i == 0) ? 0 : (g->indirect[i - 1]);
+    int e = g->indirect[i];
     for (int j = s; j < e; ++j) {
-      // printf("%d\t%d\n", i, csr[j]);
+      std::cout << g->data[i] << " " << g->data[g->csr[j]] << " " << g->edges[j] << std::endl;
     }
   }
 }
 
-Graph init(std::string filename, int size) {
-  std::vector<int> csr(size), edges(size), data;
+Graph init(std::string filename) {
+  std::vector<int> csr, edges, data;
   std::map<int, int> d, d_ctr;
   std::ifstream ifs;
   ifs.open(filename, std::ifstream::in);
@@ -194,6 +194,8 @@ Graph init(std::string filename, int size) {
       data.push_back(y);
     }
     d_ctr[x]++;
+
+    // std::cout << "inserting: " << d[y] << " " << dist << std::endl;
 
     csr.push_back(d[y]);
     edges.push_back(dist);
@@ -247,16 +249,15 @@ template <typename T> int SharedQueue<T>::N = 0;
 
 int main(int argc, char const* argv[]) {
   if (argc < 3) {
-    std::cout << "Usage: " << argv[0] << " <num_threads> <file> <count>"
+    std::cout << "Usage: " << argv[0] << " <num_threads> <file>"
               << std::endl;
     exit(-1);
   }
   int num_threads = atoi(argv[1]);
   std::string filename = argv[2];
-  int count = atoi(argv[3]);
 
   SharedQueue<QueueType>::N = num_threads;
-  Graph g = init(filename, count);
+  Graph g = init(filename);
 
   runDijkstra<MyQueue<QueueType> >(&g, num_threads, "Queue");
   runDijkstra<MyStack<QueueType> >(&g, num_threads, "Stack");
