@@ -1,6 +1,6 @@
 #include "csr.h"
 
-void createCSR(int* csr, int* edges, int* indirect, int connectedTo, int size) {
+void createCSR(vector<int> csr, vector<int> edges, vector<int> indirect, int connectedTo, int size) {
   for (int i = 0; i < size; ++i) {
     indirect[i] = (i + 1) * connectedTo;
     for (int j = 0; j < connectedTo; ++j) {

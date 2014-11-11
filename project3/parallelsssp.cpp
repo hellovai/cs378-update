@@ -14,7 +14,7 @@
 #include <thread>
 #include <mutex>
 
-#include "csr.h"
+// #include "csr.h"
 #include "parallelsssp.h"
 
 typedef struct {
@@ -46,29 +46,120 @@ class Comparator {
 template <typename T>
 class MyQueue : public std::queue<T> {
  public:
-  T top() { return this->front(); }
+  T popper(int id) {
+    T temp = this->front();
+    this->pop();
+    return temp;
+  }
+  void pusher(T item, int id) { this->push(item); }
 };
 
-std::mutex mutex;
+template <typename T>
+class MyStack : public std::stack<T> {
+ public:
+  T popper(int id) {
+    T temp = this->top();
+    this->pop();
+    return temp;
+  }
+  void pusher(T item, int id) { this->push(item); }
+};
+
+template <typename T, typename C>
+class MyPriority : public std::priority_queue<T, std::vector<T>, C> {
+ public:
+  T popper(int id) {
+    T temp = this->top();
+    this->pop();
+    return temp;
+  }
+  void pusher(T item, int id) { this->push(item); }
+};
+
+std::mutex lock;
 
 template <typename T>
-void dijkstra(Graph* g, int* dist, T q) {
+class SharedQueue {
+  static int N;
+  std::vector<std::priority_queue<T, std::vector<T>, Comparator>> _list;
+  std::vector<std::mutex> _block;
+  int counter;
+ public:
+  SharedQueue() : counter(0) {
+    for (int i = 0; i < N; ++i) {
+      _list.push_back(std::priority_queue<T, std::vector<T>, Comparator>());
+      // _block.push_back(std::mutex);
+    }
+  }
+
+  static void setN(int n) { N = n; }
+
+  T popper(int id) {
+    T temp;
+    _block[id].lock();
+    if (_list[id].size() > 0) {
+      temp = _list[id].top();
+      _list[id].pop();
+      lock.lock();
+      counter--;
+      lock.unlock();
+    } else {
+      int i = (id == 0) ? 1 : 0;
+      bool searching = true;
+      while (searching) {
+        while (!_block[i].try_lock()) {
+          i = (++i) % N;
+          if (counter == 0) {
+            _block[id].unlock();
+            return {-1, 0};
+          }
+        }
+        if (_list[i].size() > 0) {
+          temp = _list[i].top();
+          _list[i].pop();
+          lock.lock();
+          counter--;
+          lock.unlock();
+          searching = false;
+        }
+        _block[i].unlock();
+      }
+    }
+    _block[id].unlock();
+    return temp;
+  }
+
+  void pusher(T obj, int id) {
+    _block[id].lock();
+    _list[id].push(obj);
+    lock.lock();
+    counter++;
+    lock.unlock();
+    _block[id].unlock();
+  }
+  bool empty() { return counter == 0; }
+};
+
+std::mutex m;
+
+template <typename T>
+void dijkstra(Graph* g, int* dist, T q, int id) {
   int start, end, u, v, alt, i;
   while (!q.empty()) {
-    u = q.top().index;
+    u = q.popper(id).index;
+    if (u == -1) return;
     start = (u == 0) ? 0 : g->indirect[u - 1];
     end = g->indirect[u];
-    q.pop();
     for (i = start; i < end; ++i) {
       v = g->csr[i];
       alt = g->edges[i] + dist[u];
-      mutex.lock();
+      m.lock();
       if (alt < dist[v]) {
         dist[v] = alt;
         QueueType temp = {v, alt};
-        q.push(temp);
+        q.pusher(temp, id);
       }
-      mutex.unlock();
+      m.unlock();
     }
   }
 }
@@ -83,54 +174,39 @@ void print(int* csr, int* indirect, int MAX_NODES) {
   }
 }
 
-// Graph init(int size) {
-//   try {
-//     Node* data = new Node[size];
-//     int* csr = new int[size * size];
-//     int* edges = new int[size * size];
-//     int* indirect = new int[size];
-
-//     createCSR(csr, edges, indirect, 2, size);
-//     return {size, csr, edges, indirect, data};
-//   } catch (std::bad_alloc& e) {
-//     std::cout << "Memory Allocation error" << std::endl;
-//     exit(-1);
-//   }
-// }
-
 Graph init(std::string filename, int size) {
-    std::vector<int> csr(size), edges(size), data;
-    std::map<int, int> d, d_ctr;
-    std::ifstream ifs;
-    ifs.open(filename, std::ifstream::in);
-    int index = 0;
-    while (ifs.good()) {
-      int x, y, dist;
-      ifs >> x >> y >> dist;
-      if ( d.count(x) == 0 ) {
-        d[x] = index++;
-        d_ctr[x] = 0;
-        data.push_back(x);
-      }
-      if ( d.count(y) == 0 ) {
-        d[y] = index++;
-        d_ctr[y] = 0;
-        data.push_back(y);
-      }
-      d_ctr[x]++;
+  std::vector<int> csr(size), edges(size), data;
+  std::map<int, int> d, d_ctr;
+  std::ifstream ifs;
+  ifs.open(filename, std::ifstream::in);
+  int index = 0;
 
-      csr.push_back(d[y]);
-      edges.push_back(dist);
+  while (ifs.good()) {
+    int x, y, dist;
+    ifs >> x >> y >> dist;
+    if (d.count(x) == 0) {
+      d[x] = index++;
+      d_ctr[x] = 0;
+      data.push_back(x);
     }
-    int sum = 0;
-    std::vector<int> indirect(data.size());
-    for (int i = 0; i < data.size(); i++) {
-      sum += d_ctr[data[i]];
-      indirect[i] = sum;
+    if (d.count(y) == 0) {
+      d[y] = index++;
+      d_ctr[y] = 0;
+      data.push_back(y);
     }
-    return {(int) data.size(), csr, edges, indirect, data};
+    d_ctr[x]++;
+
+    csr.push_back(d[y]);
+    edges.push_back(dist);
+  }
+  int sum = 0;
+  std::vector<int> indirect(data.size());
+  for (int i = 0; i < data.size(); i++) {
+    sum += d_ctr[data[i]];
+    indirect[i] = sum;
+  }
+  return {(int)data.size(), csr, edges, indirect, data};
 }
-
 
 double deltaTime(struct timeval t1, struct timeval t2) {
   struct timeval ret;
@@ -152,11 +228,11 @@ void runDijkstra(Graph* g, int num_threads, std::string name, int source = 0) {
   T q;
   dist[source] = 0;
   QueueType temp = {source, 0};
-  q.push(temp);
+  q.pusher(temp, 0);
 
   std::vector<std::thread> v;
   for (int i = 0; i < num_threads; i++) {
-    v.push_back(std::thread(dijkstra<T>, g, dist, q));
+    v.push_back(std::thread(dijkstra<T>, g, dist, q, i));
   }
 
   gettimeofday(&t1, 0);
@@ -176,20 +252,23 @@ void runDijkstra(Graph* g, int num_threads, std::string name, int source = 0) {
 
 int main(int argc, char const* argv[]) {
   if (argc < 3) {
-    std::cout << "Usage: " << argv[0] << " <num_threads> <file> <count>" << std::endl;
+    std::cout << "Usage: " << argv[0] << " <num_threads> <file> <count>"
+              << std::endl;
     exit(-1);
   }
   int num_threads = atoi(argv[1]);
   std::string filename = argv[2];
   int count = atoi(argv[3]);
 
+  SharedQueue<QueueType>::setN(num_threads);
   Graph g = init(filename, count);
 
   runDijkstra<MyQueue<QueueType> >(&g, num_threads, "Queue");
-  runDijkstra<std::stack<QueueType> >(&g, num_threads, "Stack");
-  runDijkstra<
-      std::priority_queue<QueueType, std::vector<QueueType>, Comparator> >(
-      &g, num_threads, "Priority Queue");
+  runDijkstra<MyStack<QueueType> >(&g, num_threads, "Stack");
+  runDijkstra<MyPriority<QueueType, Comparator> >(&g, num_threads,
+                                                  "Priority Queue");
+  runDijkstra<SharedQueue<QueueType> >(&g, num_threads,
+                                       "Shared Priority Queue");
 
   return 0;
 }
