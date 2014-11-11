@@ -1,0 +1,65 @@
+	32 Threads
+./project3 32 nyc-raod.gr 733846
+----Queue----
+Time:	0.000054
+----Stack----
+Time:	0.000051
+----Priority Queue----
+Time:	0.000056
+----Shared Priority Queue----
+Time:	0.000050
+
+	16 Threads
+./project3 16 nyc-raod.gr 366923
+----Queue----
+Time:	0.000008
+----Stack----
+Time:	0.000027
+----Priority Queue----
+Time:	0.000012
+----Shared Priority Queue----
+Time:	0.000016
+
+	8 Threads
+./project3 8 nyc-raod.gr 183462
+----Queue----
+Time:	0.000006
+----Stack----
+Time:	0.000047
+----Priority Queue----
+Time:	0.000062
+----Shared Priority Queue----
+Time:	0.000064
+
+	4 Threads
+./project3 4 nyc-raod.gr 91731
+----Queue----
+Time:	0.000037
+----Stack----
+Time:	0.000021
+----Priority Queue----
+Time:	0.000052
+----Shared Priority Queue----
+Time:	0.000112
+
+	2 Threads
+./project3 2 nyc-raod.gr 45866
+----Queue----
+Time:	0.000052
+----Stack----
+Time:	0.000087
+----Priority Queue----
+Time:	0.000041
+----Shared Priority Queue----
+Time:	0.000050
+
+	1 Thread
+./project3 1 nyc-raod.gr 22933
+----Queue----
+Time:	0.000046
+----Stack----
+Time:	0.000017
+----Priority Queue----
+Time:	0.000056
+----Shared Priority Queue----
+Time:	0.000050
