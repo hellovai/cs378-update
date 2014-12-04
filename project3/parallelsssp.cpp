@@ -32,15 +32,10 @@ typedef struct {
 } QueueType;
 
 class Comparator {
-  bool reverse;
 
  public:
-  Comparator(const bool& revparam = false) { reverse = revparam; }
   bool operator()(const QueueType& lhs, const QueueType& rhs) const {
-    if (reverse)
       return (lhs.weight > rhs.weight);
-    else
-      return (lhs.weight < rhs.weight);
   }
 };
 
@@ -145,7 +140,9 @@ template <typename T>
 void dijkstra(Graph* g, int* dist, T q, int id) {
   int start, end, u, v, alt, i;
   while (!q.empty()) {
-    u = q.popper(id).index;
+    QueueType t = q.popper(id);
+    u = t.index;
+    std::cout << u << " " << t.weight << std::endl;
     if (u == -1) return;
     start = (u == 0) ? 0 : g->indirect[u - 1];
     end = g->indirect[u];
@@ -243,6 +240,10 @@ void runDijkstra(Graph* g, int num_threads, std::string name, int source = 0) {
   gettimeofday(&t2, 0);
   printf("Time:\t%f\n", deltaTime(t1, t2));
 
+  for (int i = 0; i < g->size; ++i) {
+
+  }
+
   delete dist;
 }
 template <typename T> int SharedQueue<T>::N = 0;
@@ -260,11 +261,11 @@ int main(int argc, char const* argv[]) {
   Graph g = init(filename);
 
   runDijkstra<MyQueue<QueueType> >(&g, num_threads, "Queue");
-  runDijkstra<MyStack<QueueType> >(&g, num_threads, "Stack");
-  runDijkstra<MyPriority<QueueType, Comparator> >(&g, num_threads,
-                                                  "Priority Queue");
-  runDijkstra<SharedQueue<QueueType> >(&g, num_threads,
-                                       "Shared Priority Queue");
+  // runDijkstra<MyStack<QueueType> >(&g, num_threads, "Stack");
+  // runDijkstra<MyPriority<QueueType, Comparator> >(&g, num_threads,
+                                                  // "Priority Queue");
+  // runDijkstra<SharedQueue<QueueType> >(&g, num_threads,
+                                       // "Shared Priority Queue");
 
   return 0;
 }
