@@ -8,7 +8,6 @@
 #define INDEX(N, R, C) (R * N) + C
 #define MAX_VAL 1.0
 #define TOL 0.000000001
-#define MAX_IT 10
 
 float frand(float m = MAX_VAL) {
   return ((float)rand()) / ((float)(RAND_MAX / m));
@@ -104,20 +103,22 @@ struct Matrix {
 };
 
 void print1D(float* a, int size) {
+  std::cout << "\t";
   for (int i = 0; i < size; ++i) std::cout << a[i] << " ";
   std::cout << std::endl;
 }
 
 void print2D(float* a, int size) {
   for (int i = 0; i < size; ++i) {
+    std::cout << "\t";
     for (int j = 0; j < size; ++j) std::cout << a[INDEX(size, i, j)] << " ";
     std::cout << std::endl;
   }
 }
 
 int main(int argc, char const* argv[]) {
-  if (argc != 2) {
-    std::cout << "Usage: " << argv[0] << " <matrix_size>"
+  if (argc != 3) {
+    std::cout << "Usage: " << argv[0] << " <matrix_size> <max_iterations>"
               << std::endl;
     exit(-1);
   }
@@ -126,60 +127,61 @@ int main(int argc, char const* argv[]) {
   std::cout << std::setprecision(4);
 
   int size = atoi(argv[1]);
+  int max_iterations = atoi(argv[2]);
 
-  float* a = new float[size * size];
+  float* A = new float[size * size];
   float* x = new float[size];
-  float* xt = new float[size];
+  float* y = new float[size];
   float* b = new float[size];
 
   for (int i = 0; i < size; ++i) {
     b[i] = frand();
-    x[i] = xt[i] = 0.0;
+    x[i] = y[i] = 0.0;
   }
 
   for (int i = 0; i < size; ++i)
-    for (int j = 0; j < size; ++j) a[INDEX(size, i, j)] = frand();
+    for (int j = 0; j < size; ++j) A[INDEX(size, i, j)] = frand();
 
   std::cout << "A" << std::endl;
-  print2D(a, size);
+  print2D(A, size);
   std::cout << std::endl;
 
-  std::cout << "B" << std::endl;
+  std::cout << "b" << std::endl;
   print1D(b, size);
   std::cout << std::endl;
 
+  float err = 0;
   int counter = 0;
-  while (counter++ < MAX_IT) {
+  for(; counter < max_iterations; ++counter) {
 
     for (int i = 0; i < size; ++i) {
       float val = 0.0;
       for (int j = 0; j < size; ++j)
-        if (j != i) val += a[INDEX(size, i, j)] * xt[j];
-      x[i] = (-val + b[i]) / a[INDEX(size, i, i)];
+        if (j != i) val += A[INDEX(size, i, j)] * y[j];
+      x[i] = (-val + b[i]) / A[INDEX(size, i, i)];
     }
 
-    std::cout << "x" << std::endl;
-    print1D(x, size);
-
-    float err = 0;
+    err = 0;
     for (int i = 0; i < size; ++i) {
-      err += (x[i] - xt[i]) * (x[i] - xt[i]);
-      xt[i] = x[i];
+      err += (x[i] - y[i]) * (x[i] - y[i]);
+      y[i] = x[i];
     }
     err = sqrt(err);
-    std::cout << counter << " " << err << std::endl << std::endl;
+    std::cout << "iteration: " << (counter + 1) << " error: " << err << std::endl;
+    print1D(x, size);
+    std::cout << std::endl;
 
     if (err <= TOL) break;
   }
 
-  std::cout << "x" << std::endl;
-  print1D(xt, size);
+  std::cout << "final value:: iteration: " << counter << " error: " << err << std::endl;
+  print1D(y, size);
   std::cout << std::endl;
 
   delete x;
-  delete xt;
+  delete y;
   delete b;
-  delete a;
+  delete A;
 
   return 0;
 }
