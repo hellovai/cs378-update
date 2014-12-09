@@ -116,6 +116,12 @@ void print2D(float* a, int size) {
 }
 
 int main(int argc, char const* argv[]) {
+  if (argc != 2) {
+    std::cout << "Usage: " << argv[0] << " <matrix_size>"
+              << std::endl;
+    exit(-1);
+  }
+
   srand(0);
   std::cout << std::setprecision(4);
 
