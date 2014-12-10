@@ -6,6 +6,7 @@
 #include <thread>
 #include <atomic>
 #include <iomanip>
+#include "xmmintrin.h"
 
 #define INDEX(N, C, R) (R * N) + C
 #define MAX_VAL 1.0
@@ -34,23 +35,40 @@ void print2D(float* a, int size) {
   }
 }
 
-// vectorize
-float getNewSolution(const float* A, const float* y, const int i, const float b,
-                     const int size) {
+float scalarSolution(const float* A, const float* y, const int i, const float b, const int size) {
   float val = 0.0;
   for (int j = 0; j < size; ++j)
     if (j != i) val += A[INDEX(size, i, j)] * y[j];
   return (-val + b) / A[INDEX(size, i, i)];
 }
 
+float vectorizedSolution(float* A, float* y, const int i, const float b, const int size) {
+  __m128 rA, rB, rC;
+
+  int j = 0;
+  float val = 0.0;
+  float acc[4];
+
+  for(j = 0; j < size; j += 4) {
+    rB = _mm_set_ps(A[INDEX(size, i, j)], A[INDEX(size, i, j+1)], A[INDEX(size, i, j+2)], A[INDEX(size, i, j+3)]);
+    rC = _mm_set_ps(y[j], y[j+1], y[j+2], y[j+3]);
+    _mm_add_ps(rA, _mm_mul_ps(rB, rC));
+  }
+
+  _mm_store_ps(acc, rA);
+  val += (acc[0] + acc[1] + acc[2] + acc[3]);
+
+  val -= (A[INDEX(size, i, i)] * y[i]);
+  return (- val + b) / A[INDEX(size, i, i)];
+}
+
 std::atomic<int> counter(0);
 
-void runThread(float* x, const float* A, const float* y, const float* b,
-               const int size) {
+void runThread(float* x, float* A, float* y, const float* b, const int size) {
   while (counter < size) {
     int row = counter++;
     if (row >= size) break;
-    x[row] = getNewSolution(A, y, row, b[row], size);
+    x[row] = vectorizedSolution(A, y, row, b[row], size);
   }
 }
 
@@ -67,7 +85,7 @@ int main(int argc, char const* argv[]) {
 
   int size = atoi(argv[1]) * 4;
   int max_iterations = atoi(argv[2]);
-  float density = (float)atof(argv[3]);
+  float density = (float) atof(argv[3]);
   int num_threads = atoi(argv[4]);
 
   float* A = new float[size * size];
@@ -82,17 +100,20 @@ int main(int argc, char const* argv[]) {
 
   for (int i = 0; i < size; ++i)
     for (int j = 0; j < size; ++j)
-      A[INDEX(size, i, j)] = (frand() < density) ? frand() : 0.0;
+      A[INDEX(size, i, j)] = (frand() < density) ? frand(10.0) : 0.0;
 
   float sum = 0;
 
   for (int i = 0; i < size; ++i)
-    for (int j = 0; j < size; ++j) sum += A[INDEX(size, i, j)];
+    for (int j = 0; j < size; ++j) 
+      sum += A[INDEX(size, i, j)];
 
-  for (int i = 0; i < size; ++i) A[INDEX(size, i, i)] = frand() + size;
+  for (int i = 0; i < size; ++i) 
+    A[INDEX(size, i, i)] = frand() + sum;
 
   for (int k = 0; k < max_iterations; ++k) {
     counter = 0;
+
     std::vector<std::thread> v;
     for (int i = 0; i < num_threads; ++i) {
       v.push_back(std::thread(runThread, x, A, y, b, size));
@@ -102,10 +123,14 @@ int main(int argc, char const* argv[]) {
       v[i].join();
     }
 
-    // vectorize
     for (int i = 0; i < size; ++i) {
       y[i] = x[i];
     }
+
+    // for (int i = 0; i < size; i+=4) {
+    //   __m128 _x = _mm_load_ps(&x[i]);
+    //   _mm_store_ps(&y[i], _x);
+    // }
   }
 
   float err = 0.0;
