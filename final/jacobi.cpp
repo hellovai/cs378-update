@@ -115,13 +115,12 @@ void driver(float* A, float* b, int size, int max_iterations,
   float err = 0.0;
   multiply(A, y, x, size);
   int loop;
-#pragma omp parallel for reduction(+:err) private(loop) shared(b, x)
+#pragma omp parallel for reduction(+ : err) private(loop) shared(b, x)
   for (loop = 0; loop < size; ++loop) {
     err += (x[loop] - b[loop]) * (x[loop] - b[loop]);
   }
   err = sqrt(err) / size;
-  std::cout << "Error: " << err << std::endl << "Time: " << deltaTime(t1, t2)
-            << std::endl;
+  std::cout << err << " " << deltaTime(t1, t2) << " ";
 
   delete x_x;
   delete y_x;
@@ -170,11 +169,11 @@ int main(int argc, char const* argv[]) {
   float* b = (float*)(((uintptr_t)b_x + ALIGN) & (~(uintptr_t)0x0F));
 
   init(A, b, size, density);
-
-  std::cout << "vectorizedProduct: " << std::endl;
-  driver(A, b, size, max_iterations, vectorizedProduct);
-  std::cout << "scalerProduct: " << std::endl;
+  std::cout << size << " " << max_iterations << " " << density << " "
+            << num_threads << " ";
   driver(A, b, size, max_iterations, scalarProduct);
+  driver(A, b, size, max_iterations, vectorizedProduct);
+  std::cout << std::endl;
 
   delete b_x;
   delete A_x;
