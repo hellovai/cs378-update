@@ -44,13 +44,20 @@ float getNewSolution(const float* A, const float* y, const int i, const float b,
 }
 
 std::atomic<int> counter(0);
+std::atomic<bool> iterator(true);
+std::atomic<int> waiting(0);
+std::atomic<bool> poll(true);
 
 void runThread(float* x, const float* A, const float* y, const float* b,
                const int size) {
-  while (counter < size) {
-    int row = counter++;
-    if (row >= size) break;
-    x[row] = getNewSolution(A, y, row, b[row], size);
+  while (iterator) {
+    while (counter < size) {
+      int row = counter++;
+      if (row >= size) break;
+      x[row] = getNewSolution(A, y, row, b[row], size);
+    }
+    waiting++;
+    while(poll);
   }
 }
 
@@ -91,21 +98,31 @@ int main(int argc, char const* argv[]) {
 
   for (int i = 0; i < size; ++i) A[INDEX(size, i, i)] = frand() + size;
 
-  for (int k = 0; k < max_iterations; ++k) {
-    counter = 0;
-    std::vector<std::thread> v;
-    for (int i = 0; i < num_threads; ++i) {
-      v.push_back(std::thread(runThread, x, A, y, b, size));
-    }
+  std::vector<std::thread> v;
+  for (int i = 0; i < num_threads; ++i) {
+    v.push_back(std::thread(runThread, x, A, y, b, size));
+  }
 
-    for (int i = 0; i < num_threads; ++i) {
-      v[i].join();
-    }
+  for (int k = 0; k < max_iterations; ++k) {
+    while (waiting < num_threads);
+    counter = 0;
+    waiting = 0;
 
     // vectorize
     for (int i = 0; i < size; ++i) {
       y[i] = x[i];
     }
+
+    if (k == max_iterations - 1)
+      counter = size;
+
+    poll = false;
+  }
+  iterator = false;
+  poll = false;
+
+  for (int i = 0; i < num_threads; ++i) {
+    v[i].join();
   }
 
   float err = 0.0;
