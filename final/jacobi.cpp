@@ -38,14 +38,14 @@ float distance(float* x, float* y, int size) {
 
 void print1D(float* a, int size) {
   std::cout << "\t";
-  for (int i = 0; i < size; ++i) std::cout << a[i] << " ";
+  for (int i = 0; i < size; ++i) std::cout << a[i] << "\t";
   std::cout << std::endl;
 }
 
 void print2D(float* a, int size) {
   for (int i = 0; i < size; ++i) {
     std::cout << "\t";
-    for (int j = 0; j < size; ++j) std::cout << a[INDEX(size, i, j)] << " ";
+    for (int j = 0; j < size; ++j) std::cout << a[INDEX(size, i, j)] << "\t";
     std::cout << std::endl;
   }
 }
@@ -93,7 +93,7 @@ void driver(float* A, float* b, int size, int max_iterations,
   }
 
   struct timeval t1, t2;
-  int k = 0, icol;
+  int k = 0, icol = 0;
   gettimeofday(&t1, 0);
   do {
     for (int i = 0; i < size; ++i) {
@@ -109,7 +109,7 @@ void driver(float* A, float* b, int size, int max_iterations,
       _mm_store_ps(&y[i], _mm_load_ps(&x[i]));
     }
 
-  } while (k < max_iterations && distance(y, x, size) >= TOL);
+  } while (++k < max_iterations); // && distance(y, x, size) >= TOL);
   gettimeofday(&t2, 0);
 
   float err = 0.0;
@@ -120,7 +120,7 @@ void driver(float* A, float* b, int size, int max_iterations,
     err += (x[loop] - b[loop]) * (x[loop] - b[loop]);
   }
   err = sqrt(err) / size;
-  std::cout << err << " " << deltaTime(t1, t2) << " ";
+  std::cout << err << "\t" << deltaTime(t1, t2) << "\t";
 
   delete x_x;
   delete y_x;
@@ -169,8 +169,8 @@ int main(int argc, char const* argv[]) {
   float* b = (float*)(((uintptr_t)b_x + ALIGN) & (~(uintptr_t)0x0F));
 
   init(A, b, size, density);
-  std::cout << size << " " << max_iterations << " " << density << " "
-            << num_threads << " ";
+  std::cout << size << "\t" << max_iterations << "\t" << density << "\t"
+            << num_threads << "\t";
   driver(A, b, size, max_iterations, scalarProduct);
   driver(A, b, size, max_iterations, vectorizedProduct);
   std::cout << std::endl;
