@@ -24,8 +24,8 @@ void multiply(float* A, float* b, float* x, int size) {
 
 float distance(float* x, float* y, int size) {
   float sum = 0.0;
-  for (int index = 0; index < size; index++)
-    sum += (x[index] - y[index]) * (x[index] - y[index]);
+  for (int i = 0; i < size; i++)
+    sum += (x[i] - y[i]) * (x[i] - y[i]);
   return sum;
 }
 
@@ -43,16 +43,14 @@ void print2D(float* a, int size) {
   }
 }
 
-float scalarSolution(const float* A, const float* y, const int i, const float b,
-                     const int size) {
+float scalarProduct(const float* A, const float* y, const int i, const float b, const int size) {
   float val = 0.0;
   for (int j = 0; j < size; ++j)
     if (j != i) val += A[INDEX(size, i, j)] * y[j];
   return (-val + b) / A[INDEX(size, i, i)];
 }
 
-float vectorizedSolution(float* A, float* y, const int i, const float b,
-                         const int size) {
+float vectorizedProduct(float* A, float* y, const int i, const float b, const int size) {
   __m128 rA, rB, rC;
 
   int j = 0;
@@ -128,9 +126,9 @@ int main(int argc, char const* argv[]) {
       y[i] = x[i];
     }
 
-#pragma omp parallel for private(icol) shared(x, y, b)
+    #pragma omp parallel for private(icol) shared(x, y, b)
     for (icol = 0; icol < size; ++icol) {
-      x[icol] = scalarSolution(A, y, icol, b[icol], size);
+      x[icol] = scalarProduct(A, y, icol, b[icol], size);
     }
 
     for (int i = 0; i < size; ++i) {
