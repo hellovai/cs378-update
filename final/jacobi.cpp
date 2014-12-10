@@ -3,21 +3,29 @@
 #include <cmath>
 #include <vector>
 #include <iostream>
-#include <thread>
-#include <atomic>
 #include <iomanip>
+#include <omp.h>
 
 #define INDEX(N, C, R) (R * N) + C
 #define MAX_VAL 1.0
-#define TOL 0.000000001
+#define TOL 1.0E-24
+#define ALIGN 16
 
-float frand(float m = MAX_VAL) {
-  return ((float)rand()) / ((float)(RAND_MAX / m));
+float frand(float m = MAX_VAL, bool sign = false) {
+  return sign ? (((float)rand()) / ((float)(RAND_MAX / (2 * m))) - m)
+              : (((float)rand()) / ((float)(RAND_MAX / (m))));
 }
 
 void multiply(float* A, float* b, float* x, int size) {
   for (int i = 0; i < size; i++)
     for (int j = 0; j < size; j++) x[i] += b[i] * A[INDEX(size, j, i)];
+}
+
+float distance(float* x, float* y, int size) {
+  float sum = 0.0;
+  for (int index = 0; index < size; index++)
+    sum += (x[index] - y[index]) * (x[index] - y[index]);
+  return sum;
 }
 
 void print1D(float* a, int size) {
@@ -43,22 +51,24 @@ float getNewSolution(const float* A, const float* y, const int i, const float b,
   return (-val + b) / A[INDEX(size, i, i)];
 }
 
-std::atomic<int> counter(0);
-std::atomic<bool> iterator(true);
-std::atomic<int> waiting(0);
-std::atomic<bool> poll(true);
-
-void runThread(float* x, const float* A, const float* y, const float* b,
-               const int size) {
-  while (iterator) {
-    while (counter < size) {
-      int row = counter++;
-      if (row >= size) break;
-      x[row] = getNewSolution(A, y, row, b[row], size);
-    }
-    waiting++;
-    while(poll);
+void init(float* A, float* b, float* x, float* y, int size, float density) {
+  for (int i = 0; i < size; ++i) {
+    b[i] = frand(1.0, true);
+    x[i] = y[i] = 0.0;
   }
+
+  for (int i = 0; i < size; ++i)
+    for (int j = 0; j < size; ++j)
+      A[INDEX(size, i, j)] = (frand() < density) ? frand(1.0, true) : 0.0;
+
+  float sum = 0;
+
+  for (int i = 0; i < size; ++i)
+    for (int j = 0; j < size; ++j) sum += abs(A[INDEX(size, i, j)]);
+
+  // to make matrix diagonally dominate
+  for (int i = 0; i < size; ++i)
+    A[INDEX(size, i, i)] = frand(1.0, false) + size;
 }
 
 int main(int argc, char const* argv[]) {
@@ -76,54 +86,32 @@ int main(int argc, char const* argv[]) {
   int max_iterations = atoi(argv[2]);
   float density = (float)atof(argv[3]);
   int num_threads = atoi(argv[4]);
+  omp_set_num_threads(num_threads);
 
-  float* A = new float[size * size];
-  float* x = new float[size];
-  float* y = new float[size];
-  float* b = new float[size];
+  char * A_x = new char[sizeof(float) * size * size + ALIGN];
+  char * x_x = new char[sizeof(float) * size + ALIGN];
+  char * y_x = new char[sizeof(float) * size + ALIGN];
+  char * b_x = new char[sizeof(float) * size + ALIGN];
 
-  for (int i = 0; i < size; ++i) {
-    b[i] = frand();
-    x[i] = y[i] = 0.0;
-  }
+  float* A = (float*)(((uintptr_t) A_x + ALIGN) & (~(uintptr_t)0x0F));
+  float* x = (float*)(((uintptr_t) x_x + ALIGN) & (~(uintptr_t)0x0F));
+  float* y = (float*)(((uintptr_t) y_x + ALIGN) & (~(uintptr_t)0x0F));
+  float* b = (float*)(((uintptr_t) b_x + ALIGN) & (~(uintptr_t)0x0F));
 
-  for (int i = 0; i < size; ++i)
-    for (int j = 0; j < size; ++j)
-      A[INDEX(size, i, j)] = (frand() < density) ? frand() : 0.0;
+  init(A, b, x, y, size, density);
 
-  float sum = 0;
-
-  for (int i = 0; i < size; ++i)
-    for (int j = 0; j < size; ++j) sum += A[INDEX(size, i, j)];
-
-  for (int i = 0; i < size; ++i) A[INDEX(size, i, i)] = frand() + size;
-
-  std::vector<std::thread> v;
-  for (int i = 0; i < num_threads; ++i) {
-    v.push_back(std::thread(runThread, x, A, y, b, size));
-  }
-
-  for (int k = 0; k < max_iterations; ++k) {
-    while (waiting < num_threads);
-    counter = 0;
-    waiting = 0;
-
-    // vectorize
+  int k = 0, icol;
+  do {
     for (int i = 0; i < size; ++i) {
       y[i] = x[i];
     }
 
-    if (k == max_iterations - 1)
-      counter = size;
+#pragma omp parallel for private(icol) shared(x, y, b)
+    for (icol = 0; icol < size; ++icol) {
+      x[icol] = getNewSolution(A, y, icol, b[icol], size);
+    }
 
-    poll = false;
-  }
-  iterator = false;
-  poll = false;
-
-  for (int i = 0; i < num_threads; ++i) {
-    v[i].join();
-  }
+  } while (k < max_iterations && distance(y, x, size) >= TOL);
 
   float err = 0.0;
   multiply(A, y, x, size);
@@ -133,10 +121,16 @@ int main(int argc, char const* argv[]) {
   err = sqrt(err) / size;
   std::cout << "Error: " << err << std::endl;
 
-  delete x;
-  delete y;
-  delete b;
-  delete A;
+  print2D(A, size);
+
+  print1D(b, size);
+
+  print1D(x, size);
+
+  delete x_x;
+  delete y_x;
+  delete b_x;
+  delete A_x;
 
   return 0;
 }
