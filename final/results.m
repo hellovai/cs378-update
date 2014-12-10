@@ -346,13 +346,13 @@ for i=1:length(threads)
   plot(y, z1, colors(i), y, z2, [':' colors(i)]);
 end
 hold off;
-legend('1 Thread', '2 Thread', '4 Thread', '8 Thread', '16 Thread', '32 Thread', 'Location', 'NorthWest');
+legend('1 Thread','1 Thread','2 Thread','2 Thread','4 Thread','4 Thread','8 Thread','8 Thread','16 Thread','16 Thread','32 Thread','32 Thread','Location','NorthWest');
 xlabel('Matrix N x N');
 ylabel('Time Taken');
 title('Matrix 70% dense');
 
 % Fixed Threads (4) vary density
-rd = (data(:,4) == 4);
+rd = (data(:,4) == 16);
 density = 0.6:0.1:1.0;
 
 figure;
@@ -365,7 +365,7 @@ for i=1:length(density)
   plot(y, z1, colors(i), y, z2, [':' colors(i)]);
 end
 hold off;
-legend('0.6 dense', '0.7 dense', '0.8 dense', '0.9 dense', '1.0 dense', 'Location', 'NorthWest');
+legend('0.6 dense','0.6 dense','0.7 dense','0.7 dense','0.8 dense','0.8 dense','0.9 dense','0.9 dense','1.0 dense','1.0 dense','Location','NorthWest');
 xlabel('Matrix N x N');
 ylabel('Time Taken');
-title('Solution - 4 threads');
+title('Solution - 16 threads');
