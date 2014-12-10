@@ -1,7 +1,7 @@
 all: jacobi
 
 jacobi:
-	g++ jacobi.cpp -std=c++0x -o jacobi.out -pthread
+	g++-4.9 jacobi.cpp -std=c++0x -o jacobi.out -fopenmp
 
 clean:
 	rm -rf *.out

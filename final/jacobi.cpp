@@ -43,23 +43,26 @@ void print2D(float* a, int size) {
   }
 }
 
-float scalarSolution(const float* A, const float* y, const int i, const float b, const int size) {
+float scalarSolution(const float* A, const float* y, const int i, const float b,
+                     const int size) {
   float val = 0.0;
   for (int j = 0; j < size; ++j)
     if (j != i) val += A[INDEX(size, i, j)] * y[j];
   return (-val + b) / A[INDEX(size, i, i)];
 }
 
-float vectorizedSolution(float* A, float* y, const int i, const float b, const int size) {
+float vectorizedSolution(float* A, float* y, const int i, const float b,
+                         const int size) {
   __m128 rA, rB, rC;
 
   int j = 0;
   float val = 0.0;
   float acc[4];
 
-  for(j = 0; j < size; j += 4) {
-    rB = _mm_set_ps(A[INDEX(size, i, j)], A[INDEX(size, i, j+1)], A[INDEX(size, i, j+2)], A[INDEX(size, i, j+3)]);
-    rC = _mm_set_ps(y[j], y[j+1], y[j+2], y[j+3]);
+  for (j = 0; j < size; j += 4) {
+    rB = _mm_set_ps(A[INDEX(size, i, j)], A[INDEX(size, i, j + 1)],
+                    A[INDEX(size, i, j + 2)], A[INDEX(size, i, j + 3)]);
+    rC = _mm_set_ps(y[j], y[j + 1], y[j + 2], y[j + 3]);
     _mm_add_ps(rA, _mm_mul_ps(rB, rC));
   }
 
@@ -67,7 +70,7 @@ float vectorizedSolution(float* A, float* y, const int i, const float b, const i
   val += (acc[0] + acc[1] + acc[2] + acc[3]);
 
   val -= (A[INDEX(size, i, i)] * y[i]);
-  return (- val + b) / A[INDEX(size, i, i)];
+  return (-val + b) / A[INDEX(size, i, i)];
 }
 
 void init(float* A, float* b, float* x, float* y, int size, float density) {
@@ -103,19 +106,19 @@ int main(int argc, char const* argv[]) {
 
   int size = atoi(argv[1]) * 4;
   int max_iterations = atoi(argv[2]);
-  float density = (float) atof(argv[3]);
+  float density = (float)atof(argv[3]);
   int num_threads = atoi(argv[4]);
   omp_set_num_threads(num_threads);
 
-  char * A_x = new char[sizeof(float) * size * size + ALIGN];
-  char * x_x = new char[sizeof(float) * size + ALIGN];
-  char * y_x = new char[sizeof(float) * size + ALIGN];
-  char * b_x = new char[sizeof(float) * size + ALIGN];
+  char* A_x = new char[sizeof(float) * size * size + ALIGN];
+  char* x_x = new char[sizeof(float) * size + ALIGN];
+  char* y_x = new char[sizeof(float) * size + ALIGN];
+  char* b_x = new char[sizeof(float) * size + ALIGN];
 
-  float* A = (float*)(((uintptr_t) A_x + ALIGN) & (~(uintptr_t)0x0F));
-  float* x = (float*)(((uintptr_t) x_x + ALIGN) & (~(uintptr_t)0x0F));
-  float* y = (float*)(((uintptr_t) y_x + ALIGN) & (~(uintptr_t)0x0F));
-  float* b = (float*)(((uintptr_t) b_x + ALIGN) & (~(uintptr_t)0x0F));
+  float* A = (float*)(((uintptr_t)A_x + ALIGN) & (~(uintptr_t)0x0F));
+  float* x = (float*)(((uintptr_t)x_x + ALIGN) & (~(uintptr_t)0x0F));
+  float* y = (float*)(((uintptr_t)y_x + ALIGN) & (~(uintptr_t)0x0F));
+  float* b = (float*)(((uintptr_t)b_x + ALIGN) & (~(uintptr_t)0x0F));
 
   init(A, b, x, y, size, density);
 
@@ -138,7 +141,6 @@ int main(int argc, char const* argv[]) {
     //   __m128 _x = _mm_load_ps(&x[i]);
     //   _mm_store_ps(&y[i], _x);
     // }
-  }
   } while (k < max_iterations && distance(y, x, size) >= TOL);
 
   float err = 0.0;
@@ -149,11 +151,11 @@ int main(int argc, char const* argv[]) {
   err = sqrt(err) / size;
   std::cout << "Error: " << err << std::endl;
 
-  print2D(A, size);
+  // print2D(A, size);
 
-  print1D(b, size);
+  // print1D(b, size);
 
-  print1D(x, size);
+  // print1D(x, size);
 
   delete x_x;
   delete y_x;
